@@ -99,13 +99,16 @@ GLOBAL
 
 **`auto` 怎么工作**：脚本读宿主注入的全局变量 `globalThis.__skywardLocale`（形如 `en_US` / `zh_CN`），非 `zh*` 就用英文。宿主没注入时安静回落中文——所以这个默认值对现有用户没有影响。
 
-> 内核的脚本执行环境是个裸 QuickJS，只装了 `console`，**拿不到客户端界面语言**（入口签名 `evaluate(script, config)` 只有两个字符串）。要让 `auto` 真正生效，客户端得在执行脚本前补一行：
+> 内核的脚本执行环境是个裸 QuickJS，只装了 `console`，本身**拿不到客户端界面语言**（入口签名 `evaluate(script, config)` 只有两个字符串）。所以语言是由客户端在执行前注入的：
 >
-> ```dart
-> script: "globalThis.__skywardLocale = 'en_US';\n" + scriptContent,
+> ```js
+> globalThis.__skywardLocale = "en_US";
+> // …你的脚本原文…
 > ```
 >
-> Skyward 的改动点在 `lib/common/javascript.dart` 的 `handleEvaluate`，语言值取 `appSettingProvider.locale`（跟随系统时取 `PlatformDispatcher.instance.locale`）。这一步没做之前，`auto` 等价于中文。
+> Skyward 从 `1.0.0` 之后的构建开始做这件事（`lib/common/javascript.dart` 的 `withLocale()` / `handleEvaluate(locale:)`），语言取设置里的语言选项，选「跟随系统」时取系统区域。
+>
+> **别的客户端**（FlClash、Clash Meta 系列）没有这一步，`auto` 会安静回落中文。要强制英文，把 `options.语言` 改成 `'en'` 即可，不依赖宿主。
 
 英文对照：
 
