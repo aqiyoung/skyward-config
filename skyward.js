@@ -20,6 +20,8 @@
  *   6. 兜底规则走 proxylite / geolocation-!cn / cn_ip，并可选屏蔽国外 QUIC。
  *   7. 一致性：内核 ipv6 与 dns.ipv6 由「启用IPv6」统一控制，关闭时撤掉失效的 IPv6 直连出口；
  *      DoH 关掉 h3，避免和「屏蔽国外QUIC」自相打架。
+ *   8. 语言：options.语言 支持 'zh' / 'en'，组名、直连出口名、规则目标名、DNS 里的 #组名
+ *      全部由 t() 统一产出，不会中英混排。
  */
 
 // =====================================================================
@@ -27,6 +29,11 @@
 // =====================================================================
 
 const options = {
+  // ---- 语言 ----
+  // 'zh' 中文组名 / 'en' 英文组名。只影响生成的策略组名和规则目标，
+  // 分流逻辑、规则集、图标完全一致——客户端界面切成英文时改这里即可。
+  语言: 'zh',
+
   // ---- 基础策略组 ----
   自动选择: true, // 所有节点自动测速（排除直连类节点）
   故障转移: true, // 按顺序失败切换
@@ -80,6 +87,11 @@ const options = {
   拦截追踪器: false, // 统计/追踪域名一起拒掉，过严时可能有站点功能异常
 };
 
+// 组名统一走 t(中文, English)：所有对用户可见的名字（组名、直连出口名、规则目标名）
+// 都从这里出，改 options.语言 就整份切换，不会出现中英混排。
+const isEn = options.语言 === 'en';
+const t = (zh, en) => (isEn ? en : zh);
+
 // =====================================================================
 // 二、常量
 // =====================================================================
@@ -109,23 +121,26 @@ const INVISIBLE_CHARS = /[\u00AD\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u20
 // 直连出口：提供双栈 / IPv4/IPv6 优先等多种选择。
 // 内核 ipv6 关闭时，带 IPv6 的两个出口是不会生效的，留着只会让人误选——一并撤掉。
 const directProxies = [
-  { name: '🇨🇳 直连 | 双栈', type: 'direct' },
-  { name: '🇨🇳 直连 | IPv4优先', type: 'direct', 'ip-version': 'ipv4-prefer' },
-  { name: '🇨🇳 直连 | 仅IPv4', type: 'direct', 'ip-version': 'ipv4' },
+  { name: t('🇨🇳 直连 | 双栈', '🇨🇳 Direct | Dual Stack'), type: 'direct' },
+  { name: t('🇨🇳 直连 | IPv4优先', '🇨🇳 Direct | IPv4 Preferred'), type: 'direct', 'ip-version': 'ipv4-prefer' },
+  { name: t('🇨🇳 直连 | 仅IPv4', '🇨🇳 Direct | IPv4 Only'), type: 'direct', 'ip-version': 'ipv4' },
   ...(options.启用IPv6
     ? [
-        { name: '🇨🇳 直连 | IPv6优先', type: 'direct', 'ip-version': 'ipv6-prefer' },
-        { name: '🇨🇳 直连 | 仅IPv6', type: 'direct', 'ip-version': 'ipv6' },
+        { name: t('🇨🇳 直连 | IPv6优先', '🇨🇳 Direct | IPv6 Preferred'), type: 'direct', 'ip-version': 'ipv6-prefer' },
+        { name: t('🇨🇳 直连 | 仅IPv6', '🇨🇳 Direct | IPv6 Only'), type: 'direct', 'ip-version': 'ipv6' },
       ]
     : []),
 ];
-const DIRECT_GROUP = '直连';
+const DIRECT_GROUP = t('直连', 'Direct');
 const directProxyNames = directProxies.map((p) => p.name);
 
-const DEFAULT_GROUP = '默认代理';
-const AUTO_GROUPS = ['自动选择', '故障转移', '负载均衡'];
-const FINAL_GROUP = '漏网之鱼';
-const OTHER_GROUP = '其他节点';
+const DEFAULT_GROUP = t('默认代理', 'Proxy');
+const AUTO_GROUPS = [t('自动选择', 'Auto'), t('故障转移', 'Fallback'), t('负载均衡', 'Load Balance')];
+// options 里的键名固定用中文，与 AUTO_GROUPS 按下标对应——语言只影响组名，不影响开关
+const AUTO_GROUP_KEYS = ['自动选择', '故障转移', '负载均衡'];
+const enabledAutoGroupNames = () => AUTO_GROUPS.filter((_, i) => options[AUTO_GROUP_KEYS[i]]);
+const FINAL_GROUP = t('漏网之鱼', 'Final');
+const OTHER_GROUP = t('其他节点', 'Others');
 
 // 国内常见 App 的包名。按进程直连比按域名判断更准：这些 App 大量走自有协议与直连 IP，
 // 域名规则抓不全，反而会被后面的服务规则误截走代理，绕远又慢。
@@ -154,21 +169,25 @@ const DOMESTIC_PROCESSES = [
 // 三、地区定义
 // =====================================================================
 
+// name 是内部键（也用于匹配机场给的中文节点名），en 只作为英文界面下的显示名
 const regionDefinitions = [
   {
     name: '香港',
+    en: 'Hong Kong, China',
     flag: '🇭🇰',
     regex: /🇭🇰|香港|(?<![A-Za-z])HKG?(?![A-Za-z])|hong\s*kong/i,
     icon: icon('Hong_Kong.png'),
   },
   {
     name: '日本',
+    en: 'Japan',
     flag: '🇯🇵',
     regex: /🇯🇵|日本|东京|大阪|京都|(?<![A-Za-z])JPN?(?![A-Za-z])|japan/i,
     icon: icon('Japan.png'),
   },
   {
     name: '美国',
+    en: 'United States',
     flag: '🇺🇸',
     regex:
       /🇺🇸|美国|纽约|洛杉矶|旧金山|芝加哥|休斯顿|迈阿密|西雅图|波士顿|华盛顿|拉斯维加斯|圣何塞|圣地亚哥|(?<![A-Za-z])USA?(?![A-Za-z])|america|united\s*states/i,
@@ -176,17 +195,23 @@ const regionDefinitions = [
   },
   {
     name: '新加坡',
+    en: 'Singapore',
     flag: '🇸🇬',
     regex: /🇸🇬|新加坡|狮城|(?<![A-Za-z])SGP?(?![A-Za-z])|singapore/i,
     icon: icon('Singapore.png'),
   },
   {
     name: '台湾',
+    en: 'Taiwan, China',
     flag: '🇹🇼',
     regex: /🇹🇼|台湾|台北|高雄|(?<![A-Za-z])TWN?(?![A-Za-z])|taiwan/i,
     icon: icon('Taiwan.png'),
   },
 ];
+
+// 地区组的显示名，以及「地区-自动选择」测速组的名字
+const regionLabel = (region) => t(region.name, region.en);
+const regionAutoLabel = (region) => (isEn ? `${region.en} Auto` : `${region.name}-自动选择`);
 
 // =====================================================================
 // 四、规则集（rule-providers）
@@ -539,8 +564,9 @@ function buildRegionGroups(filteredProxies) {
     const proxies = buckets[region.name];
     if (!proxies.length) continue;
 
+    const label = regionLabel(region);
     if (options.生成地区自动选择组) {
-      const autoName = `${region.name}-自动选择`;
+      const autoName = regionAutoLabel(region);
       groups.push({
         ...commonGroupOption,
         type: 'url-test',
@@ -551,11 +577,11 @@ function buildRegionGroups(filteredProxies) {
         hidden: true,
         icon: icon('Auto.png'),
       });
-      groups.push({ ...baseSelect, name: region.name, proxies: [...proxies, autoName], icon: region.icon, hidden: hiddenManual });
+      groups.push({ ...baseSelect, name: label, proxies: [...proxies, autoName], icon: region.icon, hidden: hiddenManual });
     } else {
-      groups.push({ ...baseSelect, name: region.name, proxies, icon: region.icon, hidden: hiddenManual });
+      groups.push({ ...baseSelect, name: label, proxies, icon: region.icon, hidden: hiddenManual });
     }
-    selectNames.push(region.name);
+    selectNames.push(label);
   }
 
   if (otherProxies.length) {
@@ -582,23 +608,27 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
   // 分流组的公共选项：默认代理 → 自动组 → 地区组 →（可选）直连
   const serviceProxies = (svc) => {
     if (svc.reject) return ['REJECT', 'REJECT-DROP', 'PASS'];
-    const list = [DEFAULT_GROUP, ...AUTO_GROUPS.filter((g) => options[g]), ...regionSelectNames];
+    const list = [DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames];
     if (svc.direct) list.push(DIRECT_GROUP);
     if (options.分流组添加所有节点) list.push(...allNodeNames);
     return list;
   };
 
-  const autoGroups = [
-    { ...commonGroupOption, ...includeAllOption, type: 'url-test', name: '自动选择', proxies: [], url: TEST_URL, tolerance: options.自动选择容差, hidden: true, icon: icon('Auto.png') },
-    { ...commonGroupOption, ...includeAllOption, type: 'fallback', name: '故障转移', proxies: [], url: TEST_URL, hidden: true, icon: icon('Round_Robin.png') },
-    { ...commonGroupOption, ...includeAllOption, type: 'load-balance', strategy: 'sticky-sessions', name: '负载均衡', proxies: [], url: TEST_URL, hidden: true, icon: icon('Stack.png') },
-  ].filter((g) => options[g.name]);
+  // 每个自动组的额外参数，与 AUTO_GROUPS / AUTO_GROUP_KEYS 同序
+  const autoGroupSpecs = [
+    { type: 'url-test', url: TEST_URL, tolerance: options.自动选择容差, icon: icon('Auto.png') },
+    { type: 'fallback', url: TEST_URL, icon: icon('Round_Robin.png') },
+    { type: 'load-balance', strategy: 'sticky-sessions', url: TEST_URL, icon: icon('Stack.png') },
+  ];
+  const autoGroups = autoGroupSpecs
+    .map((spec, i) => ({ ...commonGroupOption, ...includeAllOption, ...spec, name: AUTO_GROUPS[i], proxies: [], hidden: true }))
+    .filter((_, i) => options[AUTO_GROUP_KEYS[i]]);
 
   const masterGroup = {
     ...baseSelect,
     ...includeAllOption,
     name: DEFAULT_GROUP,
-    proxies: [...AUTO_GROUPS.filter((g) => options[g]), ...regionSelectNames, DIRECT_GROUP],
+    proxies: [...enabledAutoGroupNames(), ...regionSelectNames, DIRECT_GROUP],
     icon: icon('Rocket.png'),
   };
 
@@ -641,23 +671,24 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
   // ---- 规则 ----
   // 前置：国内/私有网络优先直连，避免被后面的服务规则截走
   // 进程匹配最准，放最前面：命中就不再往下看域名规则
+  // 规则里的目标名一律拼变量，不写死中文——否则切英文后规则会指向不存在的组，整个配置直接失效
   const domesticProcessRules = options.国内应用直连
-    ? DOMESTIC_PROCESSES.map((pkg) => `PROCESS-NAME,${pkg},直连`)
+    ? DOMESTIC_PROCESSES.map((pkg) => `PROCESS-NAME,${pkg},${DIRECT_GROUP}`)
     : [];
 
   const prefixRules = [
     ...domesticProcessRules,
     // 组图标由客户端自己下载，走代理容易超时（每个图标只拉一次，失败就退化成显示组名首字母），固定直连
-    `DOMAIN,${CDN_HOST},直连`,
-    'RULE-SET,private,直连',
-    'RULE-SET,private_ip,直连,no-resolve',
-    'RULE-SET,geolocation_cn,直连',
-    'RULE-SET,zijign,直连',
-    'RULE-SET,games_cn,直连',
-    'RULE-SET,apple_cn,直连',
-    'RULE-SET,microsoft_cn,直连',
-    'RULE-SET,nvidia_cn,直连',
-    ...(options.国内银行直连 ? ['RULE-SET,bank_cn,直连'] : []),
+    `DOMAIN,${CDN_HOST},${DIRECT_GROUP}`,
+    `RULE-SET,private,${DIRECT_GROUP}`,
+    `RULE-SET,private_ip,${DIRECT_GROUP},no-resolve`,
+    `RULE-SET,geolocation_cn,${DIRECT_GROUP}`,
+    `RULE-SET,zijign,${DIRECT_GROUP}`,
+    `RULE-SET,games_cn,${DIRECT_GROUP}`,
+    `RULE-SET,apple_cn,${DIRECT_GROUP}`,
+    `RULE-SET,microsoft_cn,${DIRECT_GROUP}`,
+    `RULE-SET,nvidia_cn,${DIRECT_GROUP}`,
+    ...(options.国内银行直连 ? [`RULE-SET,bank_cn,${DIRECT_GROUP}`] : []),
   ];
 
   // 屏蔽国外 QUIC：非中国大陆的 UDP/443 一律拒绝，逼迫回落 TCP
@@ -666,7 +697,7 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
     : [];
 
   // 自建/默认走代理的域名 + 特定进程
-  const ownRules = ['RULE-SET,ziji,默认代理', 'PROCESS-NAME,com.tencent.ig,默认代理'];
+  const ownRules = [`RULE-SET,ziji,${DEFAULT_GROUP}`, `PROCESS-NAME,com.tencent.ig,${DEFAULT_GROUP}`];
 
   // 服务规则：AdBlock 放最前，其余按声明顺序
   const serviceRules = [
@@ -675,9 +706,9 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
   ];
 
   const tailRules = [
-    'RULE-SET,proxylite,默认代理',
-    'RULE-SET,geolocation-!cn,默认代理',
-    'RULE-SET,cn_ip,直连,no-resolve',
+    `RULE-SET,proxylite,${DEFAULT_GROUP}`,
+    `RULE-SET,geolocation-!cn,${DEFAULT_GROUP}`,
+    `RULE-SET,cn_ip,${DIRECT_GROUP},no-resolve`,
     `MATCH,${FINAL_GROUP}`,
   ];
 
@@ -705,7 +736,7 @@ function buildDnsAndHosts() {
     'rule-set:private': 'system',
     'rule-set:geolocation_cn': cnDoh,
   };
-  if (options.GoogleFCM) nameserverPolicy['rule-set:googlefcm'] = ['https://8.8.8.8/dns-query#默认代理'];
+  if (options.GoogleFCM) nameserverPolicy['rule-set:googlefcm'] = [`https://8.8.8.8/dns-query#${DEFAULT_GROUP}`];
   // 直连的域名就该交给国内 DNS 解析，别拿境外 DNS 的结果去直连
   if (options.国内银行直连) nameserverPolicy['rule-set:bank_cn'] = cnDoh;
 
@@ -729,7 +760,7 @@ function buildDnsAndHosts() {
     'direct-nameserver': cnDns,
     'direct-nameserver-follow-policy': true,
     // 默认解析走境外 DNS（经代理），国内域名由 nameserver-policy 分流
-    nameserver: ['https://8.8.8.8/dns-query#默认代理', 'https://1.1.1.1/dns-query#默认代理'],
+    nameserver: [`https://8.8.8.8/dns-query#${DEFAULT_GROUP}`, `https://1.1.1.1/dns-query#${DEFAULT_GROUP}`],
     'nameserver-policy': nameserverPolicy,
   };
 

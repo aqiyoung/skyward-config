@@ -91,6 +91,30 @@ GLOBAL
 
 脚本开头的 `options` 对象集中管理所有开关，改完提交即可。
 
+### 语言
+
+| 开关 | 默认 | 说明 |
+| --- | --- | --- |
+| `语言` | `'zh'` | `'zh'` 中文组名 / `'en'` 英文组名。只影响生成的策略组名、直连出口名和规则里的**目标名**；分流逻辑、规则集、图标都不变 |
+
+英文对照：
+
+| 中文 | English |
+| --- | --- |
+| 默认代理 | Proxy |
+| 自动选择 / 故障转移 / 负载均衡 | Auto / Fallback / Load Balance |
+| 漏网之鱼 | Final |
+| 直连 | Direct |
+| 其他节点 | Others |
+| 直连出口 | Direct \| Dual Stack · IPv4 Preferred · IPv4 Only |
+| 香港（-自动选择） | Hong Kong, China（Hong Kong, China Auto） |
+| 日本（-自动选择） | Japan（Japan Auto） |
+| 美国（-自动选择） | United States（United States Auto） |
+| 新加坡（-自动选择） | Singapore（Singapore Auto） |
+| 台湾（-自动选择） | Taiwan, China（Taiwan, China Auto） |
+
+> 规则里的目标名（`RULE-SET,private,直连`、`MATCH,漏网之鱼`、`dns` 里的 `#默认代理`）全部由组名变量派生，切语言会自动跟着改。这是切换语言最容易翻车的地方——写死中文目标名的话，内核会因为「规则指向不存在的策略组」直接拒绝整份配置。已有的冒烟测试专门校验这一点。
+
 ### 策略组
 
 | 开关 | 默认 | 说明 |
@@ -156,6 +180,7 @@ GLOBAL
 
 - **订阅必须内联 `proxies`**。如果订阅使用 `proxy-providers`，脚本会直接抛错——因为节点过滤和地区分组需要能读到节点列表。绝大多数机场订阅都是内联 `proxies`。
 - **IPv6 默认关闭**，由 `启用IPv6` 一个开关统一控制全局 `ipv6`、`dns.ipv6` 和 IPv6 直连出口。有原生 IPv6 且想用的话，把它改成 `true` 即可，不用再手动改两处。
+- **英文模式下 Skyward 的内置组图标不会命中**。客户端的内置图标表是按中文组名硬编码的（`默认代理`、`香港` 之类），英文组名匹配不到，会回落到配置里的 `icon`。脚本给每个组都写了图标 URL，所以外观几乎无差别，只是每组图标要多走一次网络下载。
 - **Telegram 频道里的 sponsored 广告挡不掉**。广告由 MTProto 下发（`messages.getSponsoredMessages`），和普通消息走同一条 DC 连接、媒体共用同一个 CDN，没有可识别的域名或 IP 特征，域名规则无从下手。能拦的只有内置浏览器 / Instant View 里网页的广告。真要去掉，得靠第三方客户端或 Telegram Premium。
 - **`hosts` 会屏蔽 B 站 PCDN**（`+.mcdn.bilivideo.com` 等解析到 `0.0.0.0`）。不需要的话删掉 `buildDnsAndHosts()` 里那四行即可。
 - **`external-controller` 的 `secret` 是硬编码的**，且这个仓库是公开的。如果你开了 `allow-lan` 并暴露了 9090 端口，建议换成自己的随机串。
