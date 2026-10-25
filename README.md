@@ -95,7 +95,17 @@ GLOBAL
 
 | 开关 | 默认 | 说明 |
 | --- | --- | --- |
-| `语言` | `'zh'` | `'zh'` 中文组名 / `'en'` 英文组名。只影响生成的策略组名、直连出口名和规则里的**目标名**；分流逻辑、规则集、图标都不变 |
+| `语言` | `'auto'` | `'auto'` 跟随客户端界面语言 / `'zh'` 强制中文 / `'en'` 强制英文。只影响生成的策略组名、直连出口名和规则里的**目标名**；分流逻辑、规则集、图标都不变 |
+
+**`auto` 怎么工作**：脚本读宿主注入的全局变量 `globalThis.__skywardLocale`（形如 `en_US` / `zh_CN`），非 `zh*` 就用英文。宿主没注入时安静回落中文——所以这个默认值对现有用户没有影响。
+
+> 内核的脚本执行环境是个裸 QuickJS，只装了 `console`，**拿不到客户端界面语言**（入口签名 `evaluate(script, config)` 只有两个字符串）。要让 `auto` 真正生效，客户端得在执行脚本前补一行：
+>
+> ```dart
+> script: "globalThis.__skywardLocale = 'en_US';\n" + scriptContent,
+> ```
+>
+> Skyward 的改动点在 `lib/common/javascript.dart` 的 `handleEvaluate`，语言值取 `appSettingProvider.locale`（跟随系统时取 `PlatformDispatcher.instance.locale`）。这一步没做之前，`auto` 等价于中文。
 
 英文对照：
 

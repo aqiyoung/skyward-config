@@ -30,9 +30,9 @@
 
 const options = {
   // ---- 语言 ----
-  // 'zh' 中文组名 / 'en' 英文组名。只影响生成的策略组名和规则目标，
-  // 分流逻辑、规则集、图标完全一致——客户端界面切成英文时改这里即可。
-  语言: 'zh',
+  // 'auto' 跟随客户端界面语言（读宿主注入的 __skywardLocale，没有注入就回落中文）
+  // 'zh' 强制中文 / 'en' 强制英文。只影响组名与规则目标，分流逻辑、规则集、图标不变。
+  语言: 'auto',
 
   // ---- 基础策略组 ----
   自动选择: true, // 所有节点自动测速（排除直连类节点）
@@ -87,9 +87,14 @@ const options = {
   拦截追踪器: false, // 统计/追踪域名一起拒掉，过严时可能有站点功能异常
 };
 
+// 宿主（客户端）可以在执行脚本前注入 globalThis.__skywardLocale，例如 'en_US' / 'zh_CN'。
+// 没注入时这里拿不到，typeof 也不会抛错，'auto' 就安静地回落中文。
+const hostLocale = typeof __skywardLocale === 'string' ? __skywardLocale.toLowerCase() : '';
+
 // 组名统一走 t(中文, English)：所有对用户可见的名字（组名、直连出口名、规则目标名）
 // 都从这里出，改 options.语言 就整份切换，不会出现中英混排。
-const isEn = options.语言 === 'en';
+const isEn =
+  options.语言 === 'en' || (options.语言 === 'auto' && hostLocale !== '' && !hostLocale.startsWith('zh'));
 const t = (zh, en) => (isEn ? en : zh);
 
 // =====================================================================
