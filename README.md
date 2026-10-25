@@ -106,7 +106,7 @@ GLOBAL
 > // …你的脚本原文…
 > ```
 >
-> Skyward 从 `1.0.0` 之后的构建开始做这件事（`lib/common/javascript.dart` 的 `withLocale()` / `handleEvaluate(locale:)`），语言取设置里的语言选项，选「跟随系统」时取系统区域。
+> Skyward 已经支持这件事：预览版（`preview-*`）起就会在脚本前注入这一行，下一个正式版带上。实现在 `lib/common/javascript.dart` 的 `withLocale()` / `handleEvaluate(locale:)`，语言取设置里的语言选项，选「跟随系统」时取系统区域。
 >
 > **别的客户端**（FlClash、Clash Meta 系列）没有这一步，`auto` 会安静回落中文。要强制英文，把 `options.语言` 改成 `'en'` 即可，不依赖宿主。
 
