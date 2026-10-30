@@ -12,7 +12,7 @@
  *      同时补全地区国旗、剥离零宽字符（防干扰）、按名去重，并修复 dialer-proxy 的改名引用。
  *   2. 地区分组：按节点名自动归类 香港 / 日本 / 美国 / 新加坡 / 台湾，
  *      每个地区可选生成「地区-自动选择」测速组，另生成「其他节点」收纳未归类节点。
- *   3. 分流策略组：补齐 Steam / Twitter / Meta / Line / Spotify / PikPak / Crypto / AdBlock 等，
+ *   3. 分流策略组：补齐 Steam / X / Meta / Line / Spotify / PikPak / Crypto / AdBlock 等，
  *      各分流组默认首选「默认代理」→「自动选择」。
  *   4. 内核参数：补 find-process-mode、ntp；端口与嗅探配置保持原样。
  *   5. DNS：fake-ip + 按规则集分流解析（国内走国内 DNS、私有网络走系统 DNS），
@@ -54,7 +54,7 @@ const options = {
   APPLE: true,
   Telegram: true,
   Steam: true,
-  Twitter: true,
+  X: true,
   Meta: true,
   Line: true,
   TikTok: true,
@@ -307,8 +307,8 @@ const providerDefs = {
   telegram: geosite('telegram'),
   telegram_ip: geoip('telegram', 'telegram_ip'),
   steam: geosite('steam'),
-  twitter: geosite('twitter'),
-  twitter_ip: geoip('twitter', 'twitter_ip'),
+  x: geosite('twitter'),
+  x_ip: geoip('twitter', 'x_ip'),
   meta: geosite('meta'),
   facebook_ip: geoip('facebook', 'facebook_ip'),
   line: geosite('line'),
@@ -404,10 +404,10 @@ const serviceConfigs = [
   },
   { name: 'Steam', icon: icon('Steam.png'), direct: true, providers: ['steam'], rules: ['RULE-SET,steam,Steam'] },
   {
-    name: 'Twitter',
-    icon: icon('Twitter.png'),
-    providers: ['twitter', 'twitter_ip'],
-    rules: ['RULE-SET,twitter,Twitter', 'RULE-SET,twitter_ip,Twitter,no-resolve'],
+    name: 'X',
+    icon: icon('X.png'),
+    providers: ['x', 'x_ip'],
+    rules: ['RULE-SET,x,X', 'RULE-SET,x_ip,X,no-resolve'],
   },
   {
     name: 'Meta',
