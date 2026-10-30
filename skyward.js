@@ -405,7 +405,7 @@ const serviceConfigs = [
   { name: 'Steam', icon: icon('Steam.png'), direct: true, providers: ['steam'], rules: ['RULE-SET,steam,Steam'] },
   {
     name: 'X',
-    icon: 'https://cdn.jsdelivr.net/gh/aqiyoung/skyward-config@main/icons/X.png',
+    icon: 'https://cdn.jsdmirror.com/gh/aqiyoung/skyward-config@main/icons/X.png',
     providers: ['x', 'x_ip'],
     rules: ['RULE-SET,x,X', 'RULE-SET,x_ip,X,no-resolve'],
   },
