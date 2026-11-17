@@ -20,7 +20,7 @@ GEMINI_GRADIENT = {
 ICONS = [
     ("Claude.png",        SI.format("claude"),         "#D97757", "0 0 24 24",  True),
     ("OpenAI.png",        SI.format("openai"),         "#412991", "0 0 24 24",  True),
-    ("Gemini.png",        SI.format("googlegemini"),   GEMINI_GRADIENT, "0 0 24 24",  True),
+    ("GeminiGradient.png", SI.format("googlegemini"),  GEMINI_GRADIENT, "0 0 24 24",  True),
     ("GitHubCopilot.png", SI.format("githubcopilot"),  "#24292F", "0 0 24 24",  True),
     ("Perplexity.png",    SI.format("perplexity"),     "#1FB8CD", "0 0 24 24",  True),
     ("Cursor.png",        "https://cursor.com/favicon.svg", "#14120B", "0 0 512 512", False),

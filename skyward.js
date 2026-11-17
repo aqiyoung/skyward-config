@@ -445,7 +445,7 @@ const serviceConfigs = [
   // ai:true 表示这是 AI 子组：默认出口统一指向「AI工具」总控，并在规则顺序里排在通用服务之前
   { name: 'ClaudeCode', icon: repoIcon('Claude.png'), ai: true, providers: ['claude'], rules: ['RULE-SET,claude,ClaudeCode'] },
   { name: 'ChatGPT', icon: repoIcon('OpenAI.png'), ai: true, providers: ['chatgpt'], rules: ['RULE-SET,chatgpt,ChatGPT'] },
-  { name: 'Gemini', icon: repoIcon('Gemini.png'), ai: true, providers: ['gemini'], rules: ['RULE-SET,gemini,Gemini'] },
+  { name: 'Gemini', icon: repoIcon('GeminiGradient.png'), ai: true, providers: ['gemini'], rules: ['RULE-SET,gemini,Gemini'] },
   { name: 'Copilot', icon: repoIcon('GitHubCopilot.png'), ai: true, providers: ['copilot'], rules: ['RULE-SET,copilot,Copilot'] },
   { name: 'Cursor', icon: repoIcon('Cursor.png'), ai: true, providers: ['cursor'], rules: ['RULE-SET,cursor,Cursor'] },
   { name: 'Perplexity', icon: repoIcon('Perplexity.png'), ai: true, providers: ['perplexity'], rules: ['RULE-SET,perplexity,Perplexity'] },
