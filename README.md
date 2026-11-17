@@ -233,3 +233,4 @@ GLOBAL
 - 结构与思路参考：[AIsouler/MyClash](https://github.com/AIsouler/MyClash)
 - 规则集：[MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat)、[DustinWin/ruleset_geodata](https://github.com/DustinWin/ruleset_geodata)、[qichiyuhub/rule](https://github.com/qichiyuhub/rule)、[hheshenghuan-cloud/ziji](https://github.com/hheshenghuan-cloud/ziji)
 - 图标：[Koolson/Qure](https://github.com/Koolson/Qure)
+- AI 工具官方 logo：Claude / OpenAI / Gemini / GitHub Copilot / Perplexity 取自 [Simple Icons](https://simpleicons.org/)（每条都标注品牌官方来源），Cursor 取自 [官网 favicon](https://cursor.com/favicon.svg)；生成方式见 `gen_icons.py`，成品在 `icons/`

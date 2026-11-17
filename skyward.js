@@ -114,12 +114,15 @@ const t = (zh, en) => (isEn ? en : zh);
 // 图标与规则集统一走 jsDelivr 镜像，比 cdn.jsdelivr.net 在国内稳定，也避开被墙的 raw.githubusercontent.com
 const CDN_HOST = 'cdn.jsdmirror.com';
 const ICON = `https://${CDN_HOST}/gh/Koolson/Qure@master/IconSet/Color/`;
+// 仓库自托管的官方品牌 logo（品牌色圆角底 + 白色 logo，与 icons/X.png 同款）
+const REPO_ICON = `https://${CDN_HOST}/gh/aqiyoung/skyward-config@main/icons/`;
 // 规则集统一取 MetaCubeX/meta-rules-dat（.mrs 体积小、解析快）
 const RULESET = `https://${CDN_HOST}/gh/MetaCubeX/meta-rules-dat@meta/`;
 
 const TEST_URL = 'https://www.gstatic.com/generate_204';
 
 const icon = (name) => ICON + name;
+const repoIcon = (name) => REPO_ICON + name;
 
 // 机场信息/广告节点的名字特征：命中即剔除。
 // 注意：exclude-filter 写进配置时必须是「字符串」——放 RegExp 对象会被序列化成 {}，
@@ -440,12 +443,12 @@ const serviceConfigs = [
   },
   // ---- AI 工具精细化分流 ----
   // ai:true 表示这是 AI 子组：默认出口统一指向「AI工具」总控，并在规则顺序里排在通用服务之前
-  { name: 'ClaudeCode', icon: icon('Bot.png'), ai: true, providers: ['claude'], rules: ['RULE-SET,claude,ClaudeCode'] },
-  { name: 'ChatGPT', icon: icon('ChatGPT.png'), ai: true, providers: ['chatgpt'], rules: ['RULE-SET,chatgpt,ChatGPT'] },
-  { name: 'Gemini', icon: icon('Google.png'), ai: true, providers: ['gemini'], rules: ['RULE-SET,gemini,Gemini'] },
-  { name: 'Copilot', icon: icon('Copilot.png'), ai: true, providers: ['copilot'], rules: ['RULE-SET,copilot,Copilot'] },
-  { name: 'Cursor', icon: icon('Stack.png'), ai: true, providers: ['cursor'], rules: ['RULE-SET,cursor,Cursor'] },
-  { name: 'Perplexity', icon: icon('Google_Search.png'), ai: true, providers: ['perplexity'], rules: ['RULE-SET,perplexity,Perplexity'] },
+  { name: 'ClaudeCode', icon: repoIcon('Claude.png'), ai: true, providers: ['claude'], rules: ['RULE-SET,claude,ClaudeCode'] },
+  { name: 'ChatGPT', icon: repoIcon('OpenAI.png'), ai: true, providers: ['chatgpt'], rules: ['RULE-SET,chatgpt,ChatGPT'] },
+  { name: 'Gemini', icon: repoIcon('Gemini.png'), ai: true, providers: ['gemini'], rules: ['RULE-SET,gemini,Gemini'] },
+  { name: 'Copilot', icon: repoIcon('GitHubCopilot.png'), ai: true, providers: ['copilot'], rules: ['RULE-SET,copilot,Copilot'] },
+  { name: 'Cursor', icon: repoIcon('Cursor.png'), ai: true, providers: ['cursor'], rules: ['RULE-SET,cursor,Cursor'] },
+  { name: 'Perplexity', icon: repoIcon('Perplexity.png'), ai: true, providers: ['perplexity'], rules: ['RULE-SET,perplexity,Perplexity'] },
   { name: 'AgentTools', icon: icon('Bot.png'), ai: true, providers: ['agent_tools'], rules: ['RULE-SET,agent_tools,AgentTools'] },
   // 兜底组必须排在其余 AI 组之后：category-ai-!cn 覆盖面很广，放前面会把 Claude/ChatGPT 等全吃掉
   { name: 'OtherAI', icon: icon('World_Map.png'), ai: true, providers: ['ai'], rules: ['RULE-SET,ai,OtherAI'] },
@@ -475,7 +478,7 @@ const serviceConfigs = [
   { name: 'Steam', icon: icon('Steam.png'), direct: true, providers: ['steam'], rules: ['RULE-SET,steam,Steam'] },
   {
     name: 'X',
-    icon: 'https://cdn.jsdmirror.com/gh/aqiyoung/skyward-config@main/icons/X.png',
+    icon: repoIcon('X.png'),
     providers: ['x', 'x_ip'],
     rules: ['RULE-SET,x,X', 'RULE-SET,x_ip,X,no-resolve'],
   },
