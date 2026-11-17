@@ -75,6 +75,9 @@ const options = {
   AgentTools: true, // 其他 Agent / 大模型 API（Windsurf、OpenRouter、Groq、DeepSeek、xAI 等）
   OtherAI: true, // category-ai-!cn 兜底，排在其余 AI 组之后
 
+  // ---- 国内服务单独分组 ----
+  微信公众号平台: true, // 微信公众号后台与文章；默认直连，规则先于国内域名直连，可单独切换
+
   // ---- 行为 ----
   过滤非地区节点: true, // 剔除名字像「剩余流量/到期时间/官网」这类非地区节点
   屏蔽国外QUIC: true, // 强制国外流量回落到 TCP，规避 QUIC 走代理的不稳定
@@ -382,6 +385,10 @@ const providerDefs = {
     'huggingface.co',
   ]),
 
+  // ---- 国内服务单独分组 ----
+  // mp.weixin.qq.com 属于 qq.com，会被 geolocation_cn 提前截走直连；单独分组需把规则放到直连之前
+  wechat_mp: inlineDomains(['mp.weixin.qq.com', 'mmbiz.qpic.cn', 'mmbiz.qlogo.cn']),
+
   // ---- 广告与追踪 ----
   category_ads: geosite('category-ads', 'category_ads'),
   category_ads_all: geosite('category-ads-all', 'category_ads_all'), // 比 category-ads 覆盖更广
@@ -452,6 +459,15 @@ const serviceConfigs = [
   { name: 'AgentTools', icon: icon('Bot.png'), ai: true, providers: ['agent_tools'], rules: ['RULE-SET,agent_tools,AgentTools'] },
   // 兜底组必须排在其余 AI 组之后：category-ai-!cn 覆盖面很广，放前面会把 Claude/ChatGPT 等全吃掉
   { name: 'OtherAI', icon: icon('World_Map.png'), ai: true, providers: ['ai'], rules: ['RULE-SET,ai,OtherAI'] },
+
+  // defaultDirect: 首选项为「直连」；规则会被提到国内直连之前，否则 mp.weixin.qq.com 进不了这个组
+  {
+    name: '微信公众号平台',
+    icon: repoIcon('WeChatMP.png'),
+    defaultDirect: true,
+    providers: ['wechat_mp'],
+    rules: ['RULE-SET,wechat_mp,微信公众号平台'],
+  },
 
   { name: 'GitHub', icon: icon('GitHub.png'), providers: ['github'], rules: ['RULE-SET,github,GitHub'] },
   { name: 'OneDrive', icon: icon('OneDrive.png'), providers: ['onedrive'], rules: ['RULE-SET,onedrive,OneDrive'] },
@@ -683,11 +699,13 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
   }
   const ruleProviders = Object.fromEntries([...providerNames].map((name) => [name, providerDefs[name]]));
 
-  // 分流组的公共选项：默认代理 → 自动组 → 地区组 →（可选）直连；AI 子组额外前置「AI工具」总控
+  // 分流组的公共选项：默认代理 → 自动组 → 地区组 →（可选）直连
+  // AI 子组额外前置「AI工具」总控；国内服务组（defaultDirect）首选项为「直连」
   const serviceProxies = (svc) => {
     if (svc.reject) return ['REJECT', 'REJECT-DROP', 'PASS'];
-    // AI 子组首选项为总控：切总控即统一切换，仍可单独把某个子组改成具体节点/地区
-    const list = [...(svc.ai ? [AI_HUB_GROUP] : []), DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames];
+    const list = svc.defaultDirect
+      ? [DIRECT_GROUP, DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames]
+      : [...(svc.ai ? [AI_HUB_GROUP] : []), DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames];
     if (svc.direct) list.push(DIRECT_GROUP);
     if (options.分流组添加所有节点) list.push(...allNodeNames);
     return list;
@@ -764,8 +782,14 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
     ? DOMESTIC_PROCESSES.map((pkg) => `PROCESS-NAME,${pkg},${DIRECT_GROUP}`)
     : [];
 
+  // 国内服务单独分组的规则必须排在 geolocation_cn 之前，否则 mp.weixin.qq.com 会被国内域名直连提前截走
+  const priorityDirectServiceRules = enabledServices
+    .filter((svc) => svc.defaultDirect)
+    .flatMap((svc) => svc.rules || []);
+
   const prefixRules = [
     ...domesticProcessRules,
+    ...priorityDirectServiceRules,
     // 组图标由客户端自己下载，走代理容易超时（每个图标只拉一次，失败就退化成显示组名首字母），固定直连
     `DOMAIN,${CDN_HOST},${DIRECT_GROUP}`,
     `RULE-SET,private,${DIRECT_GROUP}`,
@@ -793,7 +817,7 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
   const serviceRules = [
     ...enabledServices.filter((svc) => svc.name === 'AdBlock').flatMap((svc) => svc.rules || []),
     ...enabledServices.filter((svc) => svc.ai).flatMap((svc) => svc.rules || []),
-    ...enabledServices.filter((svc) => svc.name !== 'AdBlock' && !svc.ai).flatMap((svc) => svc.rules || []),
+    ...enabledServices.filter((svc) => svc.name !== 'AdBlock' && !svc.ai && !svc.defaultDirect).flatMap((svc) => svc.rules || []),
   ];
 
   const tailRules = [

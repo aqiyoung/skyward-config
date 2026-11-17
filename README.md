@@ -53,8 +53,9 @@ https://cdn.jsdelivr.net/gh/aqiyoung/skyward-config@main/skyward.js
 | --- | --- |
 | **节点治理** | 机场把「剩余流量 / 到期时间 / 官网」这类**信息节点当成节点**投放，脚本会直接把它们从配置里剔除；同时剥离零宽字符、补全地区国旗、按名字去重、修复 `dialer-proxy` 的改名引用 |
 | **地区分组** | 按节点名自动归类 **香港 / 日本 / 美国 / 新加坡 / 台湾**，每个地区生成一个手动组和一个 `地区-自动选择` 测速组；没归类的节点进「其他节点」 |
-| **服务分流** | 27 个常用服务分组：GoogleFCM / YouTube / Google / ChatGPT / GitHub / OneDrive / Microsoft / APPLE / Telegram / Steam / X / Meta / Line / TikTok / NETFLIX / Disney / Spotify / PikPak / Crypto / AdBlock，以及 7 个 AI 工具组（见下） |
+| **服务分流** | 28 个常用服务分组：GoogleFCM / YouTube / Google / ChatGPT / GitHub / OneDrive / Microsoft / APPLE / Telegram / Steam / X / Meta / Line / TikTok / NETFLIX / Disney / Spotify / PikPak / Crypto / AdBlock，以及 7 个 AI 工具组、1 个国内服务组（见下） |
 | **AI 工具总控** | Claude Code / ChatGPT / Gemini / Copilot / Cursor / Perplexity / Agent 工具 / 其他 AI 各自成组，默认统一指向一个「AI工具」总控：切总控 = 一键切换全部 AI 流量，单个子组仍可独立改成某个节点或地区 |
+| **微信公众号平台** | 公众号后台与文章（`mp.weixin.qq.com`、公众号图片/头像 CDN）单独成组，**默认直连**；规则排在国内域名直连之前，所以能真正截住流量，需要时可在组里单独改走代理 |
 | **国内直连** | 国内域名、国内 IP、私有网络、Steam 下载、NVIDIA、国内银行与支付域名优先直连；另可按**进程名**把微信 / 支付宝 / 抖音这类国产 App 钉在直连上，不会被服务规则截走 |
 | **DNS 分流** | `fake-ip` 模式；国内域名走国内 DNS、私有网络走系统 DNS、默认走境外 DNS；银行域名走真实解析；`hosts` 修复 Google Play 下载、屏蔽 B 站 PCDN |
 | **内核参数** | 补 `find-process-mode`、`ntp`，统一各测速参数（间隔 / 超时 / 容差可配），DoH 关掉 HTTP/3 以免和「屏蔽国外QUIC」打架 |
@@ -79,13 +80,14 @@ GLOBAL
 
 ```
 1. 国产 App 按进程名（微信 / 支付宝 / 抖音 …）      → 直连
-2. 图标 CDN / 私有网络 / 国内域名 / 银行 / Steam·NVIDIA  → 直连
-3. （可选）屏蔽国外 QUIC：非中国大陆的 UDP/443 → REJECT，逼国外流量回落 TCP
-4. 自建域名 / 指定进程（PUBG）                       → 默认代理
-5. 各服务规则（AdBlock 置顶 → AI 子组 → 其余服务；AI 规则先于通用服务，避免 Gemini / Copilot 被 Google / GitHub 组抢走）
-6. proxylite / geolocation-!cn                      → 默认代理
-7. 国内 IP 兜底                                      → 直连
-8. MATCH                                            → 漏网之鱼
+2. （可选）微信公众号平台                             → 该组（默认直连，须先于下一条，否则被 qq.com 直连截走）
+3. 图标 CDN / 私有网络 / 国内域名 / 银行 / Steam·NVIDIA  → 直连
+4. （可选）屏蔽国外 QUIC：非中国大陆的 UDP/443 → REJECT，逼国外流量回落 TCP
+5. 自建域名 / 指定进程（PUBG）                       → 默认代理
+6. 各服务规则（AdBlock 置顶 → AI 子组 → 其余服务；AI 规则先于通用服务，避免 Gemini / Copilot 被 Google / GitHub 组抢走）
+7. proxylite / geolocation-!cn                      → 默认代理
+8. 国内 IP 兜底                                      → 直连
+9. MATCH                                            → 漏网之鱼
 ```
 
 ---
@@ -152,6 +154,7 @@ GLOBAL
 
 `GoogleFCM` `YouTube` `Google` `ChatGPT` `GitHub` `OneDrive` `Microsoft` `APPLE` `Telegram` `Steam` `X` `Meta` `Line` `TikTok` `NETFLIX` `Disney` `Spotify` `PikPak` `Crypto` `AdBlock`
 `ClaudeCode` `Gemini` `Copilot` `Cursor` `Perplexity` `AgentTools` `OtherAI`
+`微信公众号平台`（默认直连；关掉后公众号域名回到国内域名直连）
 
 ### AI 工具精细化分流
 
@@ -233,4 +236,4 @@ GLOBAL
 - 结构与思路参考：[AIsouler/MyClash](https://github.com/AIsouler/MyClash)
 - 规则集：[MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat)、[DustinWin/ruleset_geodata](https://github.com/DustinWin/ruleset_geodata)、[qichiyuhub/rule](https://github.com/qichiyuhub/rule)、[hheshenghuan-cloud/ziji](https://github.com/hheshenghuan-cloud/ziji)
 - 图标：[Koolson/Qure](https://github.com/Koolson/Qure)
-- AI 工具官方 logo：Claude / OpenAI / Gemini / GitHub Copilot / Perplexity 取自 [Simple Icons](https://simpleicons.org/)（每条都标注品牌官方来源），Cursor 取自 [官网 favicon](https://cursor.com/favicon.svg)；生成方式见 `gen_icons.py`，成品在 `icons/`
+- AI 工具官方 logo：Claude / OpenAI / Gemini / GitHub Copilot / Perplexity 取自 [Simple Icons](https://simpleicons.org/)（每条都标注品牌官方来源），Cursor 取自 [官网 favicon](https://cursor.com/favicon.svg)；微信公众号平台用微信官方品牌色（来源 [wechat.design](https://wechat.design/tool/brand)）。生成方式见 `gen_icons.py`，成品在 `icons/`

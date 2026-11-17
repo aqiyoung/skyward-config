@@ -24,6 +24,7 @@ ICONS = [
     ("GitHubCopilot.png", SI.format("githubcopilot"),  "#24292F", "0 0 24 24",  True),
     ("Perplexity.png",    SI.format("perplexity"),     "#1FB8CD", "0 0 24 24",  True),
     ("Cursor.png",        "https://cursor.com/favicon.svg", "#14120B", "0 0 512 512", False),
+    ("WeChatMP.png",      SI.format("wechat"),         "#07C160", "0 0 24 24",  True),
 ]
 
 SIZE = 256
