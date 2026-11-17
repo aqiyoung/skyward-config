@@ -53,7 +53,8 @@ https://cdn.jsdelivr.net/gh/aqiyoung/skyward-config@main/skyward.js
 | --- | --- |
 | **节点治理** | 机场把「剩余流量 / 到期时间 / 官网」这类**信息节点当成节点**投放，脚本会直接把它们从配置里剔除；同时剥离零宽字符、补全地区国旗、按名字去重、修复 `dialer-proxy` 的改名引用 |
 | **地区分组** | 按节点名自动归类 **香港 / 日本 / 美国 / 新加坡 / 台湾**，每个地区生成一个手动组和一个 `地区-自动选择` 测速组；没归类的节点进「其他节点」 |
-| **服务分流** | 20 个常用服务分组：GoogleFCM / YouTube / Google / ChatGPT / GitHub / OneDrive / Microsoft / APPLE / Telegram / Steam / Twitter / Meta / Line / TikTok / NETFLIX / Disney / Spotify / PikPak / Crypto / AdBlock |
+| **服务分流** | 27 个常用服务分组：GoogleFCM / YouTube / Google / ChatGPT / GitHub / OneDrive / Microsoft / APPLE / Telegram / Steam / X / Meta / Line / TikTok / NETFLIX / Disney / Spotify / PikPak / Crypto / AdBlock，以及 7 个 AI 工具组（见下） |
+| **AI 工具总控** | Claude Code / ChatGPT / Gemini / Copilot / Cursor / Perplexity / Agent 工具 / 其他 AI 各自成组，默认统一指向一个「AI工具」总控：切总控 = 一键切换全部 AI 流量，单个子组仍可独立改成某个节点或地区 |
 | **国内直连** | 国内域名、国内 IP、私有网络、Steam 下载、NVIDIA、国内银行与支付域名优先直连；另可按**进程名**把微信 / 支付宝 / 抖音这类国产 App 钉在直连上，不会被服务规则截走 |
 | **DNS 分流** | `fake-ip` 模式；国内域名走国内 DNS、私有网络走系统 DNS、默认走境外 DNS；银行域名走真实解析；`hosts` 修复 Google Play 下载、屏蔽 B 站 PCDN |
 | **内核参数** | 补 `find-process-mode`、`ntp`，统一各测速参数（间隔 / 超时 / 容差可配），DoH 关掉 HTTP/3 以免和「屏蔽国外QUIC」打架 |
@@ -62,6 +63,8 @@ https://cdn.jsdelivr.net/gh/aqiyoung/skyward-config@main/skyward.js
 
 ```
 GLOBAL
+├── AI工具 (select)           ← AI 流量总控：8 个 AI 子组默认指向它，切它=一键切换全部 AI
+│   └── ClaudeCode / ChatGPT / Gemini / Copilot / Cursor / Perplexity / AgentTools / OtherAI
 └── 默认代理                  ← 所有节点的总入口，默认指向「自动选择」
     ├── 自动选择 (url-test)   ← 所有节点自动测速，排除直连类出口
     ├── 故障转移 (fallback)
@@ -79,7 +82,7 @@ GLOBAL
 2. 图标 CDN / 私有网络 / 国内域名 / 银行 / Steam·NVIDIA  → 直连
 3. （可选）屏蔽国外 QUIC：非中国大陆的 UDP/443 → REJECT，逼国外流量回落 TCP
 4. 自建域名 / 指定进程（PUBG）                       → 默认代理
-5. 各服务规则（AdBlock 置顶：广告域 + 强化广告集）
+5. 各服务规则（AdBlock 置顶 → AI 子组 → 其余服务；AI 规则先于通用服务，避免 Gemini / Copilot 被 Google / GitHub 组抢走）
 6. proxylite / geolocation-!cn                      → 默认代理
 7. 国内 IP 兜底                                      → 直连
 8. MATCH                                            → 漏网之鱼
@@ -147,7 +150,27 @@ GLOBAL
 
 键名即策略组名，`false` 时该分组与对应规则会一起移除。
 
-`GoogleFCM` `YouTube` `Google` `ChatGPT` `GitHub` `OneDrive` `Microsoft` `APPLE` `Telegram` `Steam` `Twitter` `Meta` `Line` `TikTok` `NETFLIX` `Disney` `Spotify` `PikPak` `Crypto` `AdBlock`
+`GoogleFCM` `YouTube` `Google` `ChatGPT` `GitHub` `OneDrive` `Microsoft` `APPLE` `Telegram` `Steam` `X` `Meta` `Line` `TikTok` `NETFLIX` `Disney` `Spotify` `PikPak` `Crypto` `AdBlock`
+`ClaudeCode` `Gemini` `Copilot` `Cursor` `Perplexity` `AgentTools` `OtherAI`
+
+### AI 工具精细化分流
+
+原来所有 AI 流量挤在一个 `ChatGPT` 组里（背后是 `category-ai-!cn`，覆盖面很广）。现在拆成 8 个独立子组，域名用**脚本内联规则集**（不依赖外部下载，不会因规则集缺失导致整份配置被内核拒绝）：
+
+| 策略组 | 覆盖 | 规则集 |
+| --- | --- | --- |
+| `ClaudeCode` | Anthropic / Claude / Claude Code | 内联：`anthropic.com`、`claude.ai`、`claude.com` |
+| `ChatGPT` | OpenAI（**已收窄**，不再是 `category-ai-!cn`） | 内联：`openai.com`、`chatgpt.com`、`oaistatic.com`、`sora.com` 等 |
+| `Gemini` | Google Gemini / AI Studio / NotebookLM | 内联：`gemini.google.com`、`generativelanguage.googleapis.com` 等 |
+| `Copilot` | GitHub Copilot | 内联：`githubcopilot.com`、`copilot.microsoft.com` |
+| `Cursor` | Cursor | 内联：`cursor.com`、`cursor.sh` |
+| `Perplexity` | Perplexity AI | 内联：`perplexity.ai` |
+| `AgentTools` | 其他 Agent / 大模型 API（Windsurf、OpenRouter、Groq、DeepSeek、Mistral、xAI、HuggingFace 等） | 内联 |
+| `OtherAI` | 兜底：上面没覆盖到的 AI 域名 | `category-ai-!cn`（**必须排在其余 AI 组之后**，否则会抢走具体服务的流量） |
+
+**嵌套总控怎么用**：8 个子组的首选项都是 `AI工具`（英文 `AI Tools`）。改这一个组，等于把所有 AI 工具的出口一起切到某个节点/地区/自动组；如果想让某个工具单独走另一条线，进那个子组单独选就行，不影响其他工具。总控组本身只放出口（默认代理 / 自动组 / 地区组 / 直连），不反向引用子组，所以不会形成嵌套环。
+
+> 内联规则集的域名统一用 `+.` 前缀（等价于 `DOMAIN-SUFFIX`）：裸域名只匹配主域、`.` 只匹配子域，只有 `+.` 能同时覆盖主域和所有子域。这些域名列表是静态的，新服务上线后需要手动往脚本里补。
 
 ### 行为
 
@@ -200,6 +223,7 @@ GLOBAL
 - 图标与规则集统一走 **cdn.jsdmirror.com**（jsDelivr 国内镜像）。要换 CDN 只需改 `CDN_HOST` 一个常量，`ICON`、`RULESET` 和直连规则 `DOMAIN,...` 都从它派生。
 - **组图标由客户端自己下载，且每个图标只拉一次**。那一次没成功（超时/被限速）就退化成显示组名首字母（GLOBAL → `G`、Steam → `S`），刷新界面不会重试，只有重启客户端才会重来。图标请求若走代理容易失败，所以上面加了图标域名直连规则；直连反而更差的话，删掉 `buildGroupsAndRules()` 里那一行 `DOMAIN,...` 即可。
 - **GLOBAL 的图标不受脚本控制**。客户端对 GLOBAL 组固定渲染自己的默认图标（浅色网格地球），脚本里写的 `icon` 会被忽略，改这里看不到效果。
+- **AI 工具域名是静态内联列表**，新服务或新域名上线后需要手动往 `skyward.js` 的 `providerDefs` 里补；没覆盖到的会落到 `OtherAI`（`category-ai-!cn`）兜底，但如果新域名连 `category-ai-!cn` 都没收录，就会走 `MATCH` 兜底。
 
 ---
 

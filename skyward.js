@@ -65,6 +65,16 @@ const options = {
   Crypto: true,
   AdBlock: true,
 
+  // ---- AI 工具精细化分流（子组默认统一指向「AI工具」总控，切总控即一键切换全部 AI 流量）----
+  ClaudeCode: true, // Anthropic / Claude / Claude Code
+  // ChatGPT 见上方服务分流（原本用 category-ai-!cn，现收窄为 OpenAI 自家域名）
+  Gemini: true, // Google Gemini / AI Studio / NotebookLM
+  Copilot: true, // GitHub Copilot
+  Cursor: true, // Cursor
+  Perplexity: true, // Perplexity AI
+  AgentTools: true, // 其他 Agent / 大模型 API（Windsurf、OpenRouter、Groq、DeepSeek、xAI 等）
+  OtherAI: true, // category-ai-!cn 兜底，排在其余 AI 组之后
+
   // ---- 行为 ----
   过滤非地区节点: true, // 剔除名字像「剩余流量/到期时间/官网」这类非地区节点
   屏蔽国外QUIC: true, // 强制国外流量回落到 TCP，规避 QUIC 走代理的不稳定
@@ -140,6 +150,8 @@ const DIRECT_GROUP = t('直连', 'Direct');
 const directProxyNames = directProxies.map((p) => p.name);
 
 const DEFAULT_GROUP = t('默认代理', 'Proxy');
+// AI 流量总控：所有 AI 子组的默认出口都指向它，切它 = 一键切换全部 AI 工具；子组仍可单独改节点/地区
+const AI_HUB_GROUP = t('AI工具', 'AI Tools');
 const AUTO_GROUPS = [t('自动选择', 'Auto'), t('故障转移', 'Fallback'), t('负载均衡', 'Load Balance')];
 // options 里的键名固定用中文，与 AUTO_GROUPS 按下标对应——语言只影响组名，不影响开关
 const AUTO_GROUP_KEYS = ['自动选择', '故障转移', '负载均衡'];
@@ -234,6 +246,16 @@ const mrs = (behavior) => (file, name) => ({
 const geosite = mrs('domain');
 const geoip = mrs('ipcidr');
 
+// 内联域名规则集：域名列表直接写进配置，不依赖外部下载，也不会因为规则集缺失让内核拒绝整份配置。
+// '+' 通配符等价于 DOMAIN-SUFFIX：同时匹配主域和所有子域。裸域名只匹配主域、'.' 只匹配子域，
+// 所以这里统一给域名加 '+.'，否则 api.anthropic.com、chatgpt.com 的子域都会漏掉。
+const inlineDomains = (domains) => ({
+  type: 'inline',
+  behavior: 'domain',
+  format: 'text',
+  payload: domains.map((d) => (/^[.+*]/.test(d) ? d : `+.${d}`)),
+});
+
 // 所有规则集的定义（按名索引，构建时只挑选需要的）
 const providerDefs = {
   // ---- 始终引入：直连类 ----
@@ -320,6 +342,43 @@ const providerDefs = {
   pikpak: geosite('pikpak'),
   cryptocurrency: geosite('category-cryptocurrency', 'cryptocurrency'),
 
+  // ---- AI 工具精细化分流（内联域名，自包含）----
+  // 注意：这些域名与 Google / GitHub 等通用规则集有重叠，靠规则顺序解决——AI 组规则排在通用服务规则之前。
+  chatgpt: inlineDomains([
+    'openai.com',
+    'chatgpt.com',
+    'oaistatic.com',
+    'oaiusercontent.com',
+    'openai.org',
+    'sora.com',
+  ]),
+  claude: inlineDomains(['anthropic.com', 'claude.ai', 'claude.com']),
+  gemini: inlineDomains([
+    'gemini.google.com',
+    'aistudio.google.com',
+    'generativelanguage.googleapis.com',
+    'ai.google.dev',
+    'notebooklm.google.com',
+    'deepmind.google',
+    'bard.google.com',
+  ]),
+  copilot: inlineDomains(['githubcopilot.com', 'copilot.microsoft.com']),
+  cursor: inlineDomains(['cursor.com', 'cursor.sh']),
+  perplexity: inlineDomains(['perplexity.ai']),
+  agent_tools: inlineDomains([
+    'windsurf.com',
+    'codeium.com',
+    'openrouter.ai',
+    'groq.com',
+    'deepseek.com',
+    'mistral.ai',
+    'x.ai',
+    'together.ai',
+    'cohere.com',
+    'replicate.com',
+    'huggingface.co',
+  ]),
+
   // ---- 广告与追踪 ----
   category_ads: geosite('category-ads', 'category_ads'),
   category_ads_all: geosite('category-ads-all', 'category_ads_all'), // 比 category-ads 覆盖更广
@@ -379,7 +438,18 @@ const serviceConfigs = [
     providers: ['google', 'google_ip'],
     rules: ['RULE-SET,google,Google', 'RULE-SET,google_ip,Google,no-resolve'],
   },
-  { name: 'ChatGPT', icon: icon('ChatGPT.png'), providers: ['ai'], rules: ['RULE-SET,ai,ChatGPT'] },
+  // ---- AI 工具精细化分流 ----
+  // ai:true 表示这是 AI 子组：默认出口统一指向「AI工具」总控，并在规则顺序里排在通用服务之前
+  { name: 'ClaudeCode', icon: icon('Bot.png'), ai: true, providers: ['claude'], rules: ['RULE-SET,claude,ClaudeCode'] },
+  { name: 'ChatGPT', icon: icon('ChatGPT.png'), ai: true, providers: ['chatgpt'], rules: ['RULE-SET,chatgpt,ChatGPT'] },
+  { name: 'Gemini', icon: icon('Google.png'), ai: true, providers: ['gemini'], rules: ['RULE-SET,gemini,Gemini'] },
+  { name: 'Copilot', icon: icon('Copilot.png'), ai: true, providers: ['copilot'], rules: ['RULE-SET,copilot,Copilot'] },
+  { name: 'Cursor', icon: icon('Stack.png'), ai: true, providers: ['cursor'], rules: ['RULE-SET,cursor,Cursor'] },
+  { name: 'Perplexity', icon: icon('Google_Search.png'), ai: true, providers: ['perplexity'], rules: ['RULE-SET,perplexity,Perplexity'] },
+  { name: 'AgentTools', icon: icon('Bot.png'), ai: true, providers: ['agent_tools'], rules: ['RULE-SET,agent_tools,AgentTools'] },
+  // 兜底组必须排在其余 AI 组之后：category-ai-!cn 覆盖面很广，放前面会把 Claude/ChatGPT 等全吃掉
+  { name: 'OtherAI', icon: icon('World_Map.png'), ai: true, providers: ['ai'], rules: ['RULE-SET,ai,OtherAI'] },
+
   { name: 'GitHub', icon: icon('GitHub.png'), providers: ['github'], rules: ['RULE-SET,github,GitHub'] },
   { name: 'OneDrive', icon: icon('OneDrive.png'), providers: ['onedrive'], rules: ['RULE-SET,onedrive,OneDrive'] },
   {
@@ -610,10 +680,11 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
   }
   const ruleProviders = Object.fromEntries([...providerNames].map((name) => [name, providerDefs[name]]));
 
-  // 分流组的公共选项：默认代理 → 自动组 → 地区组 →（可选）直连
+  // 分流组的公共选项：默认代理 → 自动组 → 地区组 →（可选）直连；AI 子组额外前置「AI工具」总控
   const serviceProxies = (svc) => {
     if (svc.reject) return ['REJECT', 'REJECT-DROP', 'PASS'];
-    const list = [DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames];
+    // AI 子组首选项为总控：切总控即统一切换，仍可单独把某个子组改成具体节点/地区
+    const list = [...(svc.ai ? [AI_HUB_GROUP] : []), DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames];
     if (svc.direct) list.push(DIRECT_GROUP);
     if (options.分流组添加所有节点) list.push(...allNodeNames);
     return list;
@@ -635,6 +706,14 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
     name: DEFAULT_GROUP,
     proxies: [...enabledAutoGroupNames(), ...regionSelectNames, DIRECT_GROUP],
     icon: icon('Rocket.png'),
+  };
+
+  // AI 工具总控：只放出口（默认代理 / 自动组 / 地区组 / 直连），不引用 AI 子组，避免与子组互相引用成环
+  const aiHubGroup = {
+    ...baseSelect,
+    name: AI_HUB_GROUP,
+    proxies: [DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames, DIRECT_GROUP],
+    icon: icon('AI.png'),
   };
 
   const serviceGroups = enabledServices.map((svc) => ({
@@ -663,6 +742,7 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
     name: 'GLOBAL',
     proxies: [
       DEFAULT_GROUP,
+      AI_HUB_GROUP,
       ...autoGroups.map((g) => g.name),
       ...serviceGroups.map((g) => g.name),
       FINAL_GROUP,
@@ -704,10 +784,13 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
   // 自建/默认走代理的域名 + 特定进程
   const ownRules = [`RULE-SET,ziji,${DEFAULT_GROUP}`, `PROCESS-NAME,com.tencent.ig,${DEFAULT_GROUP}`];
 
-  // 服务规则：AdBlock 放最前，其余按声明顺序
+  // 服务规则：广告拦截置顶 → AI 子组 → 其余服务。
+  // AI 域名常与 Google / GitHub 等通用规则集重叠，必须先于通用服务规则，否则会被通用组抢走。
+  // AI 子组内部按声明顺序：具体服务在前，OtherAI（category-ai-!cn）兜底在后。
   const serviceRules = [
     ...enabledServices.filter((svc) => svc.name === 'AdBlock').flatMap((svc) => svc.rules || []),
-    ...enabledServices.filter((svc) => svc.name !== 'AdBlock').flatMap((svc) => svc.rules || []),
+    ...enabledServices.filter((svc) => svc.ai).flatMap((svc) => svc.rules || []),
+    ...enabledServices.filter((svc) => svc.name !== 'AdBlock' && !svc.ai).flatMap((svc) => svc.rules || []),
   ];
 
   const tailRules = [
@@ -719,7 +802,16 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
 
   const rules = [...prefixRules, ...quicRule, ...ownRules, ...serviceRules, ...tailRules];
 
-  const proxyGroups = [globalGroup, masterGroup, ...autoGroups, ...serviceGroups, finalGroup, directGroup, ...regionGroups.groups];
+  const proxyGroups = [
+    globalGroup,
+    masterGroup,
+    aiHubGroup,
+    ...autoGroups,
+    ...serviceGroups,
+    finalGroup,
+    directGroup,
+    ...regionGroups.groups,
+  ];
 
   return { proxyGroups, rules, ruleProviders };
 }
