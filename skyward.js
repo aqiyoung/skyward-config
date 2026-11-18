@@ -463,7 +463,7 @@ const serviceConfigs = [
   // defaultDirect: 锁定直连出口，不提供任何代理选项；规则会被提到国内直连之前，否则 mp.weixin.qq.com 进不了这个组
   {
     name: '微信公众号平台',
-    icon: repoIcon('WeChatMP.png'),
+    icon: repoIcon('WeChatMP2.png'),
     defaultDirect: true,
     providers: ['wechat_mp'],
     rules: ['RULE-SET,wechat_mp,微信公众号平台'],
