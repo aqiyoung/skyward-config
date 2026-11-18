@@ -55,7 +55,7 @@ https://cdn.jsdelivr.net/gh/aqiyoung/skyward-config@main/skyward.js
 | **地区分组** | 按节点名自动归类 **香港 / 日本 / 美国 / 新加坡 / 台湾**，每个地区生成一个手动组和一个 `地区-自动选择` 测速组；没归类的节点进「其他节点」 |
 | **服务分流** | 28 个常用服务分组：GoogleFCM / YouTube / Google / ChatGPT / GitHub / OneDrive / Microsoft / APPLE / Telegram / Steam / X / Meta / Line / TikTok / NETFLIX / Disney / Spotify / PikPak / Crypto / AdBlock，以及 7 个 AI 工具组、1 个国内服务组（见下） |
 | **AI 工具总控** | Claude Code / ChatGPT / Gemini / Copilot / Cursor / Perplexity / Agent 工具 / 其他 AI 各自成组，默认统一指向一个「AI工具」总控：切总控 = 一键切换全部 AI 流量，单个子组仍可独立改成某个节点或地区 |
-| **微信公众号平台** | 公众号后台与文章（`mp.weixin.qq.com`、公众号图片/头像 CDN）单独成组，**默认直连**；规则排在国内域名直连之前，所以能真正截住流量，需要时可在组里单独改走代理 |
+| **微信公众号平台** | 公众号后台与文章（`mp.weixin.qq.com`、公众号图片/头像 CDN）单独成组，**锁定纯直连**——组内只有双栈/IPv4 直连出口，没有任何代理选项，也不会被「分流组添加所有节点」塞进节点；规则排在国内域名直连之前，确保能真正截住流量 |
 | **国内直连** | 国内域名、国内 IP、私有网络、Steam 下载、NVIDIA、国内银行与支付域名优先直连；另可按**进程名**把微信 / 支付宝 / 抖音这类国产 App 钉在直连上，不会被服务规则截走 |
 | **DNS 分流** | `fake-ip` 模式；国内域名走国内 DNS、私有网络走系统 DNS、默认走境外 DNS；银行域名走真实解析；`hosts` 修复 Google Play 下载、屏蔽 B 站 PCDN |
 | **内核参数** | 补 `find-process-mode`、`ntp`，统一各测速参数（间隔 / 超时 / 容差可配），DoH 关掉 HTTP/3 以免和「屏蔽国外QUIC」打架 |
@@ -154,7 +154,7 @@ GLOBAL
 
 `GoogleFCM` `YouTube` `Google` `ChatGPT` `GitHub` `OneDrive` `Microsoft` `APPLE` `Telegram` `Steam` `X` `Meta` `Line` `TikTok` `NETFLIX` `Disney` `Spotify` `PikPak` `Crypto` `AdBlock`
 `ClaudeCode` `Gemini` `Copilot` `Cursor` `Perplexity` `AgentTools` `OtherAI`
-`微信公众号平台`（默认直连；关掉后公众号域名回到国内域名直连）
+`微信公众号平台`（锁定直连，无代理选项；关掉后公众号域名回到国内域名直连）
 
 ### AI 工具精细化分流
 

@@ -76,7 +76,7 @@ const options = {
   OtherAI: true, // category-ai-!cn 兜底，排在其余 AI 组之后
 
   // ---- 国内服务单独分组 ----
-  微信公众号平台: true, // 微信公众号后台与文章；默认直连，规则先于国内域名直连，可单独切换
+  微信公众号平台: true, // 微信公众号后台与文章；锁定直连（无代理选项），规则先于国内域名直连
 
   // ---- 行为 ----
   过滤非地区节点: true, // 剔除名字像「剩余流量/到期时间/官网」这类非地区节点
@@ -460,7 +460,7 @@ const serviceConfigs = [
   // 兜底组必须排在其余 AI 组之后：category-ai-!cn 覆盖面很广，放前面会把 Claude/ChatGPT 等全吃掉
   { name: 'OtherAI', icon: icon('World_Map.png'), ai: true, providers: ['ai'], rules: ['RULE-SET,ai,OtherAI'] },
 
-  // defaultDirect: 首选项为「直连」；规则会被提到国内直连之前，否则 mp.weixin.qq.com 进不了这个组
+  // defaultDirect: 锁定直连出口，不提供任何代理选项；规则会被提到国内直连之前，否则 mp.weixin.qq.com 进不了这个组
   {
     name: '微信公众号平台',
     icon: repoIcon('WeChatMP.png'),
@@ -700,12 +700,12 @@ function buildGroupsAndRules(filteredProxies, regionGroups) {
   const ruleProviders = Object.fromEntries([...providerNames].map((name) => [name, providerDefs[name]]));
 
   // 分流组的公共选项：默认代理 → 自动组 → 地区组 →（可选）直连
-  // AI 子组额外前置「AI工具」总控；国内服务组（defaultDirect）首选项为「直连」
+  // AI 子组额外前置「AI工具」总控；国内服务组（defaultDirect）锁定直连，不提供任何代理选项
   const serviceProxies = (svc) => {
     if (svc.reject) return ['REJECT', 'REJECT-DROP', 'PASS'];
-    const list = svc.defaultDirect
-      ? [DIRECT_GROUP, DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames]
-      : [...(svc.ai ? [AI_HUB_GROUP] : []), DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames];
+    // 公众号这类国内服务不该走代理：只放直连出口，且不受「分流组添加所有节点」影响
+    if (svc.defaultDirect) return [...directProxyNames];
+    const list = [...(svc.ai ? [AI_HUB_GROUP] : []), DEFAULT_GROUP, ...enabledAutoGroupNames(), ...regionSelectNames];
     if (svc.direct) list.push(DIRECT_GROUP);
     if (options.分流组添加所有节点) list.push(...allNodeNames);
     return list;
